@@ -2,7 +2,7 @@
 
 ## Status
 
-Awaiting the Phase 0.5 GitHub Actions run. Phase 0 is not declared complete until the pull request CI check passes.
+The Phase 0.5 GitHub Actions verification has passed. Phase 0 remains pending only until this pull request is merged and the checkpoint tag is created.
 
 ## Checkpoint
 
@@ -29,6 +29,6 @@ Awaiting the Phase 0.5 GitHub Actions run. Phase 0 is not declared complete unti
 - CI provisions PostgreSQL and runs the same `pnpm verify` command.
 - Phase 0 dashboard values remain documented presentation placeholders, not production data.
 
-## Remaining gate
+## Finalization
 
-After the pull request CI check passes, merge the pull request and create the Phase 0 checkpoint tag. Phase 1 starts only after that tag exists.
+The pull request CI check passed on the full release gate. Merge the pull request and create the Phase 0 checkpoint tag. Phase 1 starts only after that tag exists.
