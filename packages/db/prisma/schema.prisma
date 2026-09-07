@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum IntegrationEventStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+model Organization {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique @db.VarChar(50)
+  name      String   @db.VarChar(200)
+  timezone  String   @default("UTC") @db.VarChar(100)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  branches          Branch[]
+  integrationEvents IntegrationEvent[]
+
+  @@map("organizations")
+}
+
+model Branch {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  code           String       @db.VarChar(50)
+  name           String       @db.VarChar(200)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  warehouses   Warehouse[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@map("branches")
+}
+
+model Warehouse {
+  id        String   @id @default(uuid()) @db.Uuid
+  branchId  String   @db.Uuid
+  code      String   @db.VarChar(50)
+  name      String   @db.VarChar(200)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  branch    Branch             @relation(fields: [branchId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  locations WarehouseLocation[]
+
+  @@unique([branchId, code])
+  @@index([branchId])
+  @@map("warehouses")
+}
+
+model WarehouseLocation {
+  id          String   @id @default(uuid()) @db.Uuid
+  warehouseId String   @db.Uuid
+  code        String   @db.VarChar(50)
+  name        String   @db.VarChar(200)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([warehouseId, code])
+  @@index([warehouseId])
+  @@map("warehouse_locations")
+}
+
+model IntegrationEvent {
+  idempotencyKey String                 @id @db.VarChar(200)
+  id             String                 @unique @default(uuid()) @db.Uuid
+  organizationId String                 @db.Uuid
+  eventType      String                 @db.VarChar(100)
+  status         IntegrationEventStatus @default(PENDING)
+  payload        Json
+  attempts       Int                    @default(0)
+  availableAt    DateTime               @default(now()) @db.Timestamptz(6)
+  processedAt    DateTime?              @db.Timestamptz(6)
+  lastError      String?                @db.Text
+  createdAt      DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime               @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([status, availableAt])
+  @@index([organizationId, eventType])
+  @@map("integration_events")
+}

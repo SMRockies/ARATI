@@ -1,0 +1,30 @@
+{
+  "name": "arati-erp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Arati Business ERP monorepo",
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "setup": "corepack pnpm install",
+    "dev": "node scripts/dev-placeholder.mjs",
+    "build": "node scripts/verify-workspace.mjs --build",
+    "lint": "node scripts/verify-workspace.mjs --lint",
+    "typecheck": "node scripts/verify-workspace.mjs --typecheck",
+    "test": "node --test",
+    "db:validate": "corepack pnpm --filter @arati/db validate",
+    "db:generate": "corepack pnpm --filter @arati/db generate",
+    "db:migrate": "corepack pnpm --filter @arati/db migrate:dev",
+    "db:deploy": "corepack pnpm --filter @arati/db migrate:deploy",
+    "db:reset": "corepack pnpm --filter @arati/db migrate:reset",
+    "db:seed": "corepack pnpm --filter @arati/db seed",
+    "db:health": "corepack pnpm --filter @arati/db health",
+    "api:build": "corepack pnpm --filter @arati/api build",
+    "api:test": "corepack pnpm --filter @arati/api test",
+    "api:dev": "corepack pnpm --filter @arati/api dev",
+    "web:build": "corepack pnpm --filter @arati/web build",
+    "web:test": "corepack pnpm --filter @arati/web test",
+    "web:typecheck": "corepack pnpm --filter @arati/web typecheck",
+    "web:dev": "corepack pnpm --filter @arati/web dev",
+    "verify": "node scripts/verify-workspace.mjs --all && corepack pnpm --filter @arati/db validate && corepack pnpm --filter @arati/db generate && corepack pnpm --filter @arati/db migrate:deploy && corepack pnpm --filter @arati/db seed && corepack pnpm --filter @arati/db health && corepack pnpm --filter @arati/api build && corepack pnpm --filter @arati/api test && corepack pnpm --filter @arati/web typecheck && corepack pnpm --filter @arati/web test && corepack pnpm --filter @arati/web build && corepack pnpm test"
+  }
+}

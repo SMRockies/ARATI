@@ -1,0 +1,12 @@
+{
+  "name": "@arati/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./load-env.mjs": {
+      "types": "./src/load-env.d.ts",
+      "default": "./src/load-env.mjs"
+    }
+  }
+}

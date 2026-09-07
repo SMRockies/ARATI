@@ -1,0 +1,24 @@
+{
+  "name": "@arati/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node scripts/prisma-command.mjs generate",
+    "validate": "node scripts/prisma-command.mjs validate",
+    "format": "node scripts/prisma-command.mjs format",
+    "migrate:dev": "node scripts/prisma-command.mjs migrate dev",
+    "migrate:deploy": "node scripts/prisma-command.mjs migrate deploy",
+    "migrate:reset": "node scripts/prisma-command.mjs migrate reset",
+    "seed": "node prisma/seed.mjs",
+    "health": "node src/healthcheck.mjs",
+    "studio": "prisma studio"
+  },
+  "dependencies": {
+    "@arati/config": "workspace:*",
+    "@prisma/client": "6.16.2"
+  },
+  "devDependencies": {
+    "prisma": "6.16.2"
+  }
+}
