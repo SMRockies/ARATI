@@ -1,11 +1,12 @@
 import { getRuntimeConfig } from '../lib/runtime-config';
 
-const navigation = [
+const navigation: Array<{ label: string; icon: string; active?: boolean; href?: string }> = [
   { label: 'Overview', icon: '01', active: true },
-  { label: 'Inventory', icon: '02' },
-  { label: 'Sales & POS', icon: '03' },
-  { label: 'Procurement', icon: '04' },
-  { label: 'Parties', icon: '05' }
+  { label: 'Catalogue', icon: '02', href: '/catalog' },
+  { label: 'Inventory', icon: '03' },
+  { label: 'Sales & POS', icon: '04' },
+  { label: 'Procurement', icon: '05' },
+  { label: 'Parties', icon: '06' }
 ];
 
 const metrics = [
@@ -37,7 +38,7 @@ export default function HomePage() {
         <nav aria-label="Primary navigation">
           <p className="nav-heading">Workspace</p>
           {navigation.map((item) => (
-            <a className={`nav-item ${item.active ? 'nav-item-active' : ''}`} href="#" key={item.label}>
+            <a className={`nav-item ${item.active ? 'nav-item-active' : ''}`} href={item.href ?? '#'} key={item.label}>
               <span className="nav-icon">{item.icon}</span>
               {item.label}
             </a>

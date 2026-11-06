@@ -6,6 +6,10 @@ export class JsonLogger {
     this.write('info', message, context);
   }
 
+  warn(message: string, context: Record<string, unknown> = {}): void {
+    this.write('warn', message, context);
+  }
+
   error(message: string, context: Record<string, unknown> = {}): void {
     this.write('error', message, context);
   }

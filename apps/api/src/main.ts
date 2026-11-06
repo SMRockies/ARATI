@@ -19,7 +19,14 @@ async function bootstrap(): Promise<void> {
   const logger = app.get(JsonLogger);
 
   app.use(helmet());
-  app.enableCors({ origin: config.corsOrigin, credentials: true });
+  if (config.trustProxyHops > 0) {
+    app.getHttpAdapter().getInstance().set('trust proxy', config.trustProxyHops);
+  } else if (config.nodeEnv === 'production') {
+    logger.warn('api.trust_proxy_unset', {
+      detail: 'TRUST_PROXY_HOPS is 0 in production; behind a reverse proxy every request shares one rate-limit bucket.',
+    });
+  }
+  app.enableCors({ origin: config.corsOrigins, credentials: true });
   const requestIdMiddleware = new RequestIdMiddleware();
   app.use(requestIdMiddleware.use.bind(requestIdMiddleware));
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));

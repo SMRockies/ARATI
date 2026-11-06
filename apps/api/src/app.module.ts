@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import { HealthController } from './health.controller.js';
-import { AppConfig } from './config.js';
 import { JsonLogger } from './logger.js';
-import { PrismaService } from './prisma.service.js';
+import { CoreModule } from './core.module.js';
+import { AuthModule } from './auth/auth.module.js';
+import { CatalogModule } from './catalog/catalog.module.js';
+import { InventoryModule } from './inventory/inventory.module.js';
+import { MarketModule } from './market/market.module.js';
 
 @Module({
+  imports: [CoreModule, AuthModule, CatalogModule, InventoryModule, MarketModule],
   controllers: [HealthController],
-  providers: [AppConfig, JsonLogger, PrismaService]
+  providers: [JsonLogger]
 })
 export class AppModule {}

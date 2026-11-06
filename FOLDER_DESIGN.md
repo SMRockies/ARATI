@@ -58,13 +58,15 @@ ARATI/
 │  │     ├─ audit/                    # Append-only audit history and traceability
 │  │     └─ integrations/             # TallyPrime and other external boundaries
 │  ├─ worker/                         # Background jobs and retryable integration processing
-│  └─ web/                            # Next.js ERP user interface
+│  ├─ web/                            # Next.js ERP user interface
 │     └─ src/
 │        ├─ app/                      # Routes and page composition
 │        ├─ features/                 # UI grouped by business capability
 │        ├─ components/               # Reusable UI components
 │        ├─ lib/                      # API client, session, and UI utilities
 │        └─ styles/                   # Global styles and design tokens
+│  └─ mobile-android/                 # Kotlin/Compose Android client
+│     └─ app/src/                     # Android UI, stock domain, and data sources
 ├─ packages/
 │  ├─ config/                         # Shared TypeScript, lint, and formatting config
 │  ├─ db/                             # Prisma schema, migrations, seeds, and database client
@@ -120,6 +122,8 @@ Inventory and payment state are especially controlled:
 ### Frontend
 
 `apps/web` owns presentation and user interaction. It may validate input for usability, but it must never be the authority for permissions, prices, stock, totals, posting, or other critical business rules.
+
+`apps/mobile-android` is also a presentation client. Its local stock records are demo-only; production reads must come from the organization API. It must not edit stock balances or bypass the inventory ledger.
 
 ### Infrastructure and documentation
 

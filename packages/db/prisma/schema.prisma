@@ -14,6 +14,37 @@ enum IntegrationEventStatus {
   FAILED
 }
 
+enum ProductLifecycleStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum ProductTrackingMode {
+  QUANTITY
+  SERIAL
+  BATCH
+  HYBRID
+}
+
+enum InventoryMovementType {
+  RECEIPT
+  ISSUE
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT_INCREASE
+  ADJUSTMENT_DECREASE
+  RESERVE
+  RELEASE
+  DAMAGE
+}
+
+enum InventoryBucket {
+  ON_HAND
+  RESERVED
+  DAMAGED
+}
+
 model Organization {
   id        String   @id @default(uuid()) @db.Uuid
   code      String   @unique @db.VarChar(50)
@@ -24,36 +55,51 @@ model Organization {
 
   branches          Branch[]
   integrationEvents IntegrationEvent[]
+  memberships       OrganizationMembership[]
+  auditEvents       AuditEvent[]
+  productCategories ProductCategory[]
+  productBrands     ProductBrand[]
+  products          Product[]
+  productVariants   ProductVariant[]
+  stockBalances     StockBalance[]
+  inventoryPostings InventoryPosting[]
+  inventoryMovements InventoryMovement[]
+  proofAttachments ProofAttachment[]
 
   @@map("organizations")
 }
 
 model Branch {
-  id             String       @id @default(uuid()) @db.Uuid
-  organizationId String       @db.Uuid
-  code           String       @db.VarChar(50)
-  name           String       @db.VarChar(200)
-  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime     @updatedAt @db.Timestamptz(6)
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  code           String   @db.VarChar(50)
+  name           String   @db.VarChar(200)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   warehouses   Warehouse[]
+  memberships  OrganizationMembership[]
 
+  @@unique([id, organizationId])
   @@unique([organizationId, code])
   @@index([organizationId])
   @@map("branches")
 }
 
 model Warehouse {
-  id        String   @id @default(uuid()) @db.Uuid
-  branchId  String   @db.Uuid
-  code      String   @db.VarChar(50)
-  name      String   @db.VarChar(200)
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  id              String   @id @default(uuid()) @db.Uuid
+  branchId        String   @db.Uuid
+  code            String   @db.VarChar(50)
+  name            String   @db.VarChar(200)
+  countsForMarket Boolean  @default(true)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
 
-  branch    Branch             @relation(fields: [branchId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  locations WarehouseLocation[]
+  branch             Branch              @relation(fields: [branchId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  locations          WarehouseLocation[]
+  stockBalances      StockBalance[]
+  inventoryMovements InventoryMovement[]
 
   @@unique([branchId, code])
   @@index([branchId])
@@ -75,6 +121,116 @@ model WarehouseLocation {
   @@map("warehouse_locations")
 }
 
+model User {
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String    @unique @db.VarChar(320)
+  passwordHash     String    @db.VarChar(255)
+  displayName      String    @db.VarChar(200)
+  isActive         Boolean   @default(true)
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime? @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(6)
+
+  memberships        OrganizationMembership[]
+  sessions           AuthSession[]
+  auditEvents        AuditEvent[]
+  inventoryPostings  InventoryPosting[]
+  inventoryMovements InventoryMovement[]
+  uploadedProofs     ProofAttachment[]
+
+  @@map("users")
+}
+
+model Role {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique @db.VarChar(80)
+  name      String   @db.VarChar(120)
+  isSystem  Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  memberships OrganizationMembership[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  code        String   @id @db.VarChar(100)
+  description String   @db.VarChar(240)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId         String   @db.Uuid
+  permissionCode String   @db.VarChar(100)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  permission Permission @relation(fields: [permissionCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([roleId, permissionCode])
+  @@index([permissionCode])
+  @@map("role_permissions")
+}
+
+model OrganizationMembership {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  organizationId String   @db.Uuid
+  branchId       String?  @db.Uuid
+  roleId         String   @db.Uuid
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  branch       Branch?      @relation(fields: [branchId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([userId, organizationId, branchId])
+  @@index([organizationId, branchId])
+  @@map("organization_memberships")
+}
+
+model AuthSession {
+  id                String    @id @default(uuid()) @db.Uuid
+  tokenHash         String    @unique @db.VarChar(64)
+  userId            String    @db.Uuid
+  expiresAt         DateTime  @db.Timestamptz(6)
+  revokedAt         DateTime? @db.Timestamptz(6)
+  lastSeenAt        DateTime  @default(now()) @db.Timestamptz(6)
+  absoluteExpiresAt DateTime  @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("auth_sessions")
+}
+
+model AuditEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String?  @db.Uuid
+  organizationId String?  @db.Uuid
+  action         String   @db.VarChar(120)
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+  @@map("audit_events")
+}
+
 model IntegrationEvent {
   idempotencyKey String                 @id @db.VarChar(200)
   id             String                 @unique @default(uuid()) @db.Uuid
@@ -94,4 +250,201 @@ model IntegrationEvent {
   @@index([status, availableAt])
   @@index([organizationId, eventType])
   @@map("integration_events")
+}
+
+model ProductCategory {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  code           String   @db.VarChar(60)
+  name           String   @db.VarChar(200)
+  slug           String   @db.VarChar(160)
+  description    String?  @db.VarChar(2000)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  products     Product[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, slug])
+  @@index([organizationId, isActive])
+  @@map("product_categories")
+}
+
+model ProductBrand {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  code           String   @db.VarChar(60)
+  name           String   @db.VarChar(200)
+  slug           String   @db.VarChar(160)
+  description    String?  @db.VarChar(2000)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  products     Product[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, slug])
+  @@index([organizationId, isActive])
+  @@map("product_brands")
+}
+
+model Product {
+  id              String                @id @default(uuid()) @db.Uuid
+  organizationId  String                @db.Uuid
+  categoryId      String                @db.Uuid
+  brandId         String?               @db.Uuid
+  code            String                @db.VarChar(60)
+  name            String                @db.VarChar(200)
+  slug            String                @db.VarChar(160)
+  lifecycleStatus  ProductLifecycleStatus @default(DRAFT)
+  isPublished      Boolean               @default(false)
+  publishedAt      DateTime?             @db.Timestamptz(6)
+  isEnquiryAllowed Boolean               @default(true)
+  trackingMode     ProductTrackingMode   @default(QUANTITY)
+  summary         String?               @db.VarChar(400)
+  description     String?               @db.Text
+  specifications  Json                  @default("[]")
+  imageUrl        String?               @db.VarChar(2048)
+  imageAlt        String?               @db.VarChar(300)
+  createdAt       DateTime              @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime              @updatedAt @db.Timestamptz(6)
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  category     ProductCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  brand        ProductBrand?    @relation(fields: [brandId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  variants     ProductVariant[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, slug])
+  @@index([organizationId, lifecycleStatus, isPublished])
+  @@index([categoryId])
+  @@index([brandId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  productId      String   @db.Uuid
+  sku            String   @db.VarChar(80)
+  name           String   @db.VarChar(200)
+  unitOfMeasure  String   @default("PCS") @db.VarChar(20)
+  attributes     Json     @default("{}")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  stockBalances      StockBalance[]
+  inventoryMovements InventoryMovement[]
+
+  @@unique([organizationId, sku])
+  @@index([productId])
+  @@map("product_variants")
+}
+
+/// One controlled inventory operation. A posting groups the ledger rows written
+/// by a single API call so a retried idempotency key can be answered without
+/// posting stock twice.
+model InventoryPosting {
+  id              String                @id @default(uuid()) @db.Uuid
+  organizationId  String                @db.Uuid
+  type            InventoryMovementType
+  idempotencyKey  String?               @db.VarChar(200)
+  referenceType   String?               @db.VarChar(40)
+  referenceId     String?               @db.VarChar(120)
+  reason          String?               @db.VarChar(500)
+  createdByUserId String?               @db.Uuid
+  createdAt       DateTime              @default(now()) @db.Timestamptz(6)
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy    User?              @relation(fields: [createdByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  movements    InventoryMovement[]
+  proofAttachment ProofAttachment?
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, createdAt])
+  @@map("inventory_postings")
+}
+
+/// Append-only stock ledger. Ledger rows are never updated or deleted; the
+/// database rejects both. Balances are derived from these rows by posting
+/// through the inventory service, never by editing a stored count.
+model InventoryMovement {
+  id              String                @id @default(uuid()) @db.Uuid
+  postingId       String                @db.Uuid
+  organizationId  String                @db.Uuid
+  warehouseId     String                @db.Uuid
+  variantId       String                @db.Uuid
+  type            InventoryMovementType
+  bucket          InventoryBucket
+  quantity        Int
+  referenceType   String?               @db.VarChar(40)
+  referenceId     String?               @db.VarChar(120)
+  reason          String?               @db.VarChar(500)
+  createdByUserId String?               @db.Uuid
+  occurredAt      DateTime              @default(now()) @db.Timestamptz(6)
+  createdAt       DateTime              @default(now()) @db.Timestamptz(6)
+
+  posting      InventoryPosting @relation(fields: [postingId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  warehouse    Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  variant      ProductVariant   @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy    User?            @relation(fields: [createdByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId, variantId, occurredAt])
+  @@index([warehouseId, variantId])
+  @@index([postingId])
+  @@map("inventory_movements")
+}
+
+/// Private receipt evidence stored on the API host. The attachment is immutable
+/// and belongs to exactly one receipt posting.
+model ProofAttachment {
+  id              String   @id @default(uuid()) @db.Uuid
+  organizationId  String   @db.Uuid
+  postingId       String   @unique @db.Uuid
+  storageKey      String   @unique @db.VarChar(100)
+  fileName        String   @db.VarChar(255)
+  mimeType        String   @db.VarChar(100)
+  fileSizeBytes   Int
+  sha256          String   @db.Char(64)
+  uploadedByUserId String? @db.Uuid
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  posting      InventoryPosting @relation(fields: [postingId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  uploadedBy   User?            @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@map("proof_attachments")
+}
+
+/// Current balance per warehouse and variant, maintained only by applying
+/// ledger deltas inside the posting transaction. Invariants are enforced by a
+/// database check constraint: no negative bucket and reserved <= onHand.
+model StockBalance {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  warehouseId    String   @db.Uuid
+  variantId      String   @db.Uuid
+  onHand         Int      @default(0)
+  reserved       Int      @default(0)
+  damaged        Int      @default(0)
+  version        Int      @default(0)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  warehouse    Warehouse      @relation(fields: [warehouseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  variant      ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([warehouseId, variantId])
+  @@index([organizationId, variantId])
+  @@map("stock_balances")
 }

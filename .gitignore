@@ -12,3 +12,7 @@ coverage/
 .DS_Store
 Thumbs.db
 postgres-data/
+**/var/inventory-proofs/
+.dev.vars
+*.pem
+*.key

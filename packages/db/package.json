@@ -10,13 +10,15 @@
     "migrate:dev": "node scripts/prisma-command.mjs migrate dev",
     "migrate:deploy": "node scripts/prisma-command.mjs migrate deploy",
     "migrate:reset": "node scripts/prisma-command.mjs migrate reset",
+    "migrate:status": "node scripts/prisma-command.mjs migrate status",
     "seed": "node prisma/seed.mjs",
     "health": "node src/healthcheck.mjs",
     "studio": "prisma studio"
   },
   "dependencies": {
     "@arati/config": "workspace:*",
-    "@prisma/client": "6.16.2"
+    "@prisma/client": "6.16.2",
+    "argon2": "^0.41.1"
   },
   "devDependencies": {
     "prisma": "6.16.2"
