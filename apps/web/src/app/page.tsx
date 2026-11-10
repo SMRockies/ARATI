@@ -1,10 +1,14 @@
 import { getRuntimeConfig } from '../lib/runtime-config';
 
+// The greeting follows the clock, so the page must render per request instead of being
+// prerendered once at build time with whichever part of the day the build ran in.
+export const dynamic = 'force-dynamic';
+
 const navigation: Array<{ label: string; icon: string; active?: boolean; href?: string }> = [
   { label: 'Overview', icon: '01', active: true },
   { label: 'Catalogue', icon: '02', href: '/catalog' },
-  { label: 'Inventory', icon: '03' },
-  { label: 'Sales & POS', icon: '04' },
+  { label: 'Inventory', icon: '03', href: '/inventory' },
+  { label: 'Sales & POS', icon: '04', href: '/sales' },
   { label: 'Procurement', icon: '05' },
   { label: 'Parties', icon: '06' }
 ];
@@ -15,8 +19,26 @@ const metrics = [
   { label: 'Receivables', value: '₹8.42L', delta: '14 accounts due', tone: 'warning' }
 ];
 
+/**
+ * Morning 05:00–11:59, afternoon 12:00–16:59, evening 17:00–20:59, night otherwise.
+ * Rendered on the server, so it follows the server's clock.
+ */
+function greetingFor(hour: number): string {
+  if (hour >= 5 && hour < 12) return 'Good Morning, Admin.';
+  if (hour >= 12 && hour < 17) return 'Good Afternoon, Admin.';
+  if (hour >= 17 && hour < 21) return 'Good Evening, Admin.';
+  return 'Overview for the Night, Admin.';
+}
+
+function formatToday(now: Date): string {
+  const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(now);
+  const month = new Intl.DateTimeFormat('en-GB', { month: 'long' }).format(now);
+  return `${weekday}, ${String(now.getDate()).padStart(2, '0')} ${month} ${now.getFullYear()}`;
+}
+
 export default function HomePage() {
   const { apiBaseUrl } = getRuntimeConfig();
+  const now = new Date();
 
   return (
     <main className="shell">
@@ -49,8 +71,8 @@ export default function HomePage() {
           <a className="nav-item" href="#"><span className="nav-icon">06</span>Reports</a>
           <a className="nav-item" href="#"><span className="nav-icon">07</span>Settings</a>
           <div className="user-chip">
-            <span className="avatar">AK</span>
-            <span><strong>Arjun Kumar</strong><small>Administrator</small></span>
+            <span className="avatar">AD</span>
+            <span><strong>Admin</strong><small>Administrator</small></span>
             <span className="user-menu">•••</span>
           </div>
         </div>
@@ -69,8 +91,8 @@ export default function HomePage() {
         <div className="page-body">
           <div className="welcome-row">
             <div>
-              <p className="eyebrow">Monday, 06 September 2026</p>
-              <h1>Good morning, Arjun.</h1>
+              <p className="eyebrow">{formatToday(now)}</p>
+              <h1>{greetingFor(now.getHours())}</h1>
               <p className="lead">Here is the operational pulse for your business today.</p>
             </div>
             <button className="primary-button"><span>+</span> New transaction</button>

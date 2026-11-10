@@ -341,7 +341,7 @@ export default function InventoryPage() {
           <a className="nav-item" href="/"><span className="nav-icon">01</span>Overview</a>
           <a className="nav-item" href="/catalog"><span className="nav-icon">02</span>Catalogue</a>
           <a className="nav-item nav-item-active" href="/inventory"><span className="nav-icon">03</span>Inventory</a>
-          <span className="nav-item nav-item-disabled"><span className="nav-icon">04</span>Sales &amp; POS</span>
+          <a className="nav-item" href="/sales"><span className="nav-icon">04</span>Sales &amp; POS</a>
           <span className="nav-item nav-item-disabled"><span className="nav-icon">05</span>Procurement</span>
         </nav>
 
